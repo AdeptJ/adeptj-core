@@ -81,6 +81,7 @@ public enum TemplateEngine {
                         .setSuffix(config.getString(KEY_SUFFIX))
                         .setScanClasspath(false)
                         .build())
+                .addTemplateLocator(BundleClassPathTemplateLocatorHolder.getInstance().getTemplateLocator())
                 .setProperty(START_DELIMITER, config.getString(KEY_START_DELIMITER))
                 .setProperty(END_DELIMITER, config.getString(KEY_END_DELIMITER))
                 .setProperty(DEFAULT_FILE_ENCODING, UTF8)
@@ -105,6 +106,10 @@ public enum TemplateEngine {
         } catch (Exception ex) { // NOSONAR
             throw new TemplateProcessingException(ex);
         }
+    }
+
+    public MustacheEngine getMustacheEngine() {
+        return this.mustacheEngine;
     }
 
     public static TemplateEngine getInstance() {

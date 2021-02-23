@@ -23,6 +23,8 @@ import com.adeptj.runtime.common.BundleContextHolder;
 import com.adeptj.runtime.common.Environment;
 import com.adeptj.runtime.common.Times;
 import com.adeptj.runtime.config.Configs;
+import com.adeptj.runtime.templating.BundleClassPathTemplateLocator;
+import com.adeptj.runtime.templating.BundleClassPathTemplateLocatorHolder;
 import com.typesafe.config.Config;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -74,6 +76,8 @@ public enum FrameworkManager {
 
     private ServiceListener serviceListener;
 
+    private BundleClassPathTemplateLocator templateLocator;
+
     public void startFramework() {
         try {
             long startTime = System.nanoTime();
@@ -89,6 +93,9 @@ public enum FrameworkManager {
             bundleContext.addFrameworkListener(this.frameworkListener);
             this.serviceListener = new LoggerConfigFactoryListener();
             bundleContext.addServiceListener(this.serviceListener, LOGGER_CFG_FACTORY_FILTER);
+            this.templateLocator = new BundleClassPathTemplateLocator(bundleContext);
+            BundleClassPathTemplateLocatorHolder.getInstance().setTemplateLocator(this.templateLocator);
+            this.templateLocator.open();
             BundleContextHolder.getInstance().setBundleContext(bundleContext);
             new BundleInstaller().installAndStartBundles(felixConf);
             LOGGER.info("OSGi Framework [Apache Felix v{}] started in [{}] ms!!",
@@ -106,6 +113,7 @@ public enum FrameworkManager {
                 LOGGER.info("OSGi Framework not started yet, nothing to stop!!");
             } else {
                 this.removeServicesAndListeners();
+                this.templateLocator.close();
                 this.framework.stop();
                 // A value of zero will wait indefinitely.
                 FrameworkEvent event = this.framework.waitForStop(0);

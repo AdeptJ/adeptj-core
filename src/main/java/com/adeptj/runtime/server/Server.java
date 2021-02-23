@@ -34,6 +34,7 @@ import com.adeptj.runtime.exception.RuntimeInitializationException;
 import com.adeptj.runtime.handler.HealthCheckHandler;
 import com.adeptj.runtime.handler.ServletInitialHandlerWrapper;
 import com.adeptj.runtime.handler.SetHeadersHandler;
+import com.adeptj.runtime.handler.SitesHandler;
 import com.adeptj.runtime.osgi.FrameworkLauncher;
 import com.adeptj.runtime.predicate.ContextPathPredicate;
 import com.adeptj.runtime.servlet.AdminServlet;
@@ -46,8 +47,10 @@ import io.undertow.Undertow.Builder;
 import io.undertow.server.DefaultByteBufferPool;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.AllowedMethodsHandler;
+import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.PathHandler;
+import io.undertow.server.handlers.PathTemplateHandler;
 import io.undertow.server.handlers.PredicateHandler;
 import io.undertow.server.handlers.RedirectHandler;
 import io.undertow.server.handlers.RequestBufferingHandler;
@@ -415,7 +418,9 @@ public final class Server implements Lifecycle {
                 new SetHeadersHandler(httpContinueReadHandler, headers);
         ContextPathPredicate contextPathPredicate = new ContextPathPredicate(cfg.getString(KEY_CONTEXT_PATH));
         PredicateHandler predicateHandler = Handlers.predicate(contextPathPredicate, contextHandler, headersHandler);
-        PathHandler pathHandler = Handlers.path(predicateHandler)
+        PathTemplateHandler templateHandler = new PathTemplateHandler(predicateHandler).add("/sites/{site}/*",
+                new BlockingHandler(new SitesHandler()));
+        PathHandler pathHandler = Handlers.path(templateHandler)
                 .addPrefixPath(cfg.getString(KEY_HEALTH_CHECK_HANDLER_PATH), new HealthCheckHandler());
         AllowedMethodsHandler allowedMethodsHandler = new AllowedMethodsHandler(pathHandler, this.allowedMethods(cfg));
         int maxConcurrentRequests = Integer.getInteger(SYS_PROP_MAX_CONCUR_REQ, cfg.getInt(KEY_MAX_CONCURRENT_REQUESTS));
